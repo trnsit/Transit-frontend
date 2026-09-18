@@ -17,6 +17,10 @@ import {
   FolderGit2,
   Play,
   X,
+  Search,
+  Shield,
+  CheckCircle2,
+  AlertCircle,
 } from 'lucide-react';
 
 import {
@@ -178,6 +182,8 @@ export default function RepositoriesPage() {
    * a checkbox to the form.
    */
   const [isPrivate, setIsPrivate] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'scanned' | 'unscanned'>('all');
 
   /*
    * Load repositories from FastAPI/PostgreSQL.
@@ -408,7 +414,7 @@ export default function RepositoriesPage() {
             .toISOString()
             .replace('T', ' ')
             .slice(0, 19),
-          user: 'admin@pqshield.io',
+          user: 'operator@transit.io',
           details: `Connected repository ${repoName.trim()} (${branch.trim() || 'main'})`,
         };
 
@@ -547,7 +553,7 @@ export default function RepositoriesPage() {
             .toISOString()
             .replace('T', ' ')
             .slice(0, 19),
-          user: 'admin@pqshield.io',
+          user: 'operator@transit.io',
           details: `Disconnected repository: ${name}`,
         };
 
@@ -898,17 +904,30 @@ export default function RepositoriesPage() {
     }, 3000);
   };
 
-  return (
-    <div className="p-6 space-y-6">
-      {/* Header Panel */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-100">
-            Repositories Manager
-          </h1>
+  const filteredRepos = repos.filter((repo) => {
+    const matchesSearch =
+      repo.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      repo.url.toLowerCase().includes(searchTerm.toLowerCase());
+    if (statusFilter === 'scanned') return matchesSearch && repo.status === 'scanned';
+    if (statusFilter === 'unscanned') return matchesSearch && repo.status === 'unscanned';
+    return matchesSearch;
+  });
 
-          <p className="text-xs text-zinc-400 mt-1">
-            Connect and configure software source repositories for static cryptographic scanning.
+  return (
+    <div className="p-6 md:p-8 space-y-7 max-w-7xl mx-auto">
+      {/* Header Panel */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-800/80">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl font-bold tracking-tight text-white">
+              Repository Fleet Management
+            </h1>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+              {repos.length} Connected
+            </span>
+          </div>
+          <p className="text-xs text-slate-400 mt-1">
+            Connect and configure software source repositories for static cryptographic scanning and post-quantum migration.
           </p>
         </div>
 
@@ -917,7 +936,7 @@ export default function RepositoriesPage() {
             setError(null);
             setIsModalOpen(true);
           }}
-          className="h-9 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center gap-2 text-xs font-semibold shadow-[0_2px_8px_rgba(79,70,229,0.25)] transition-all active:scale-[0.98]"
+          className="h-9 px-4 bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white rounded-xl flex items-center gap-2 text-xs font-semibold shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all active:scale-[0.98] cursor-pointer self-start sm:self-auto"
         >
           <Plus className="h-4 w-4" />
           Connect Repository
@@ -926,210 +945,237 @@ export default function RepositoriesPage() {
 
       {/* Error Message */}
       {error && (
-        <div className="bg-red-950/30 border border-red-900/50 rounded-lg px-4 py-3 flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold text-red-400">
-              Repository API Error
-            </p>
-
-            <p className="text-xs text-red-300/80 mt-1">
-              {error}
-            </p>
+        <div className="bg-rose-950/30 border border-rose-800/60 rounded-xl px-4 py-3 flex items-start justify-between gap-4">
+          <div className="flex items-start gap-2.5">
+            <AlertCircle className="h-4 w-4 text-rose-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-semibold text-rose-300">
+                Repository Operation Alert
+              </p>
+              <p className="text-xs text-rose-300/80 mt-0.5">{error}</p>
+            </div>
           </div>
-
           <button
             onClick={() => setError(null)}
-            className="text-red-500 hover:text-red-300"
+            className="text-rose-400 hover:text-rose-200"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
       )}
 
+      {/* Filter and Search Bar */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="relative w-full sm:w-80">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Filter repositories by name or URL..."
+            className="w-full h-9 pl-9 pr-3 bg-[#0d121f] border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30 transition-all"
+          />
+        </div>
+
+        <div className="flex items-center gap-1.5 p-1 bg-[#0d121f] border border-slate-800 rounded-xl self-stretch sm:self-auto">
+          {(['all', 'scanned', 'unscanned'] as const).map((filter) => (
+            <button
+              key={filter}
+              onClick={() => setStatusFilter(filter)}
+              className={`px-3 py-1 text-xs font-medium rounded-lg capitalize transition-all cursor-pointer ${
+                statusFilter === filter
+                  ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-semibold'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              {filter === 'all' ? 'All Repositories' : filter}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Loading State */}
       {isLoading && (
-        <div className="flex items-center justify-center py-16">
+        <div className="flex items-center justify-center py-20 bg-[#0d121f]/50 border border-slate-800/80 rounded-2xl">
           <div className="flex flex-col items-center gap-3">
-            <RefreshCw className="h-6 w-6 text-indigo-500 animate-spin" />
-
-            <span className="text-xs text-zinc-500">
-              Loading repositories...
+            <RefreshCw className="h-7 w-7 text-cyan-400 animate-spin" />
+            <span className="text-xs font-mono text-cyan-400">
+              Synchronizing repository fleet...
             </span>
           </div>
         </div>
       )}
 
       {/* Empty State */}
-      {!isLoading && repos.length === 0 && (
-        <div className="border border-dashed border-zinc-800 rounded-xl py-16 flex flex-col items-center justify-center">
-          <FolderGit2 className="h-10 w-10 text-zinc-700" />
-
-          <h3 className="text-sm font-semibold text-zinc-300 mt-4">
-            No repositories connected
+      {!isLoading && filteredRepos.length === 0 && (
+        <div className="border border-dashed border-slate-800 bg-[#0d121f]/40 rounded-2xl py-16 flex flex-col items-center justify-center text-center p-6">
+          <div className="h-12 w-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 mb-3">
+            <FolderGit2 className="h-6 w-6" />
+          </div>
+          <h3 className="text-sm font-semibold text-white">
+            No matching repositories found
           </h3>
-
-          <p className="text-xs text-zinc-600 mt-1">
-            Connect a GitHub repository to get started.
+          <p className="text-xs text-slate-400 mt-1 max-w-sm">
+            {repos.length === 0
+              ? 'Connect a GitHub or GitLab repository to initialize continuous post-quantum cryptographic discovery.'
+              : 'No repositories matched your search or status filter.'}
           </p>
-
           <button
             onClick={() => {
               setError(null);
               setIsModalOpen(true);
             }}
-            className="mt-5 h-8 px-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center gap-2 text-xs font-semibold"
+            className="mt-5 h-9 px-4 bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white rounded-xl flex items-center gap-2 text-xs font-semibold shadow-md transition-all cursor-pointer"
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className="h-4 w-4" />
             Connect Repository
           </button>
         </div>
       )}
 
       {/* Grid of Repositories */}
-      {!isLoading && repos.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {repos.map((repo) => {
+      {!isLoading && filteredRepos.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {filteredRepos.map((repo) => {
             const isScanning =
-              scanningId === repo.id ||
-              repo.status === 'scanning';
+              scanningId === repo.id || repo.status === 'scanning';
 
             return (
               <div
                 key={repo.id}
-                className="bg-zinc-900/40 border border-zinc-900 rounded-xl p-5 flex flex-col justify-between group hover:border-zinc-800/80 transition-all duration-300 relative overflow-hidden"
+                className="bg-[#0d121f]/90 border border-slate-800 hover:border-cyan-500/40 rounded-2xl p-6 flex flex-col justify-between group transition-all duration-300 relative overflow-hidden shadow-xl backdrop-blur-xl"
               >
-                {/* Scan Loader */}
+                {/* Active Scan Overlay */}
                 {isScanning && (
-                  <div className="absolute inset-0 bg-zinc-950/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center gap-3">
-                    <RefreshCw className="h-7 w-7 text-indigo-500 animate-spin" />
-
+                  <div className="absolute inset-0 bg-[#07090e]/90 backdrop-blur-md z-20 flex flex-col items-center justify-center gap-3">
+                    <div className="relative">
+                      <RefreshCw className="h-8 w-8 text-cyan-400 animate-spin drop-shadow-[0_0_8px_#22d3ee]" />
+                      <div className="absolute inset-0 rounded-full animate-ping bg-cyan-500/20" />
+                    </div>
                     <div className="flex flex-col items-center">
-                      <span className="text-xs font-semibold text-zinc-200">
-                        Analyzing Repository
+                      <span className="text-xs font-bold text-white tracking-wider">
+                        SCANNING REPOSITORY
                       </span>
-
-                      <span className="text-[10px] text-zinc-500 font-mono mt-1">
-                        Cloning, AST parsing, mapping...
+                      <span className="text-[10px] text-cyan-400 font-mono mt-0.5">
+                        AST parsing, Tree-sitter extraction, policy checks...
                       </span>
                     </div>
                   </div>
                 )}
 
                 <div>
-                  {/* Repository Title */}
-                  <div className="flex items-start justify-between">
+                  {/* Title & Stance Header */}
+                  <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-zinc-800 border border-zinc-700/50 flex items-center justify-center text-zinc-300">
-                        <FolderGit2 className="h-5 w-5 text-indigo-400" />
+                      <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-cyan-500/10 to-indigo-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 group-hover:border-cyan-500/40 transition-colors shadow-sm">
+                        <FolderGit2 className="h-5 w-5" />
                       </div>
 
                       <div className="flex flex-col">
-                        <span className="font-bold text-zinc-100 group-hover:text-white transition-colors">
+                        <span className="font-bold text-slate-100 group-hover:text-cyan-300 transition-colors text-base">
                           {repo.name}
                         </span>
-
-                        <span className="text-[10px] font-mono text-zinc-500 flex items-center gap-1.5 mt-0.5">
-                          <GitFork className="h-3 w-3 text-zinc-600" />
-                          {repo.branch}
-                        </span>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-[10px] font-mono text-slate-400 flex items-center gap-1">
+                            <GitFork className="h-3 w-3 text-cyan-400" />
+                            {repo.branch}
+                          </span>
+                          <span className="text-slate-600">•</span>
+                          <span className="text-[10px] font-mono text-slate-400">
+                            GitHub
+                          </span>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Status Badge */}
+                    {/* Status Chip */}
                     {repo.status === 'scanned' ? (
-                      <span className="px-2 py-0.5 rounded text-[10px] bg-emerald-950/20 border border-emerald-900/30 text-emerald-400 font-medium">
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center gap-1.5">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                         Scanned
                       </span>
                     ) : repo.status === 'unscanned' ? (
-                      <span className="px-2 py-0.5 rounded text-[10px] bg-zinc-800 border border-zinc-700/60 text-zinc-400">
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-mono bg-slate-800 text-slate-400 border border-slate-700">
                         Unscanned
                       </span>
                     ) : repo.status === 'scanning' ? (
-                      <span className="px-2 py-0.5 rounded text-[10px] bg-indigo-950/20 border border-indigo-900/30 text-indigo-400">
-                        Scanning
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-mono bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex items-center gap-1.5">
+                        <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-ping" />
+                        Analyzing
                       </span>
                     ) : (
-                      <span className="px-2 py-0.5 rounded text-[10px] bg-red-950/20 border border-red-900/30 text-red-400">
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-mono bg-rose-500/10 border border-rose-500/30 text-rose-400">
                         Failed
                       </span>
                     )}
                   </div>
 
                   {/* Git URL */}
-                  <div className="mt-4 text-xs font-mono text-zinc-400 bg-zinc-950/50 px-3 py-2 rounded border border-zinc-900/80 flex items-center justify-between">
-                    <span className="truncate max-w-[280px]">
-                      {repo.url}
-                    </span>
-
+                  <div className="mt-4 text-xs font-mono text-slate-300 bg-slate-900/80 px-3.5 py-2 rounded-xl border border-slate-800 flex items-center justify-between">
+                    <span className="truncate max-w-[280px]">{repo.url}</span>
                     <a
                       href={repo.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="shrink-0"
+                      className="shrink-0 text-slate-500 hover:text-cyan-400 transition-colors ml-2"
                       aria-label={`Open ${repo.name}`}
                     >
-                      <ExternalLink className="h-3.5 w-3.5 text-zinc-600 hover:text-indigo-400 transition-colors" />
+                      <ExternalLink className="h-3.5 w-3.5" />
                     </a>
                   </div>
 
-                  {/* Language Tags */}
-                  <div className="mt-4 flex flex-wrap gap-1.5">
+                  {/* Language Badges */}
+                  <div className="mt-3.5 flex flex-wrap gap-1.5">
                     {repo.language.length > 0 ? (
                       repo.language.map((lang) => (
                         <span
                           key={lang}
-                          className="px-2 py-0.5 text-[10px] bg-zinc-800 text-zinc-300 rounded font-semibold border border-zinc-700/30"
+                          className="px-2 py-0.5 text-[10px] font-mono bg-cyan-500/10 text-cyan-300 rounded-md border border-cyan-500/20 font-medium"
                         >
                           {lang}
                         </span>
                       ))
                     ) : (
-                      <span className="px-2 py-0.5 text-[10px] bg-zinc-800/50 text-zinc-500 rounded font-semibold border border-zinc-700/20">
-                        Language not available
+                      <span className="px-2 py-0.5 text-[10px] font-mono bg-slate-800/60 text-slate-500 rounded-md border border-slate-800">
+                        Polyglot
                       </span>
                     )}
                   </div>
 
-                  {/* Crypto Stats */}
+                  {/* Crypto Stats Grid */}
                   {repo.status === 'scanned' && (
-                    <div className="mt-5 grid grid-cols-3 gap-3 border-t border-zinc-900 pt-4 text-center">
+                    <div className="mt-5 grid grid-cols-3 gap-2 bg-slate-900/60 rounded-xl p-3 border border-slate-800/80 text-center">
                       <div className="flex flex-col gap-0.5">
-                        <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">
+                        <span className="text-[9px] text-slate-400 uppercase tracking-wider font-mono font-semibold">
                           Risk Score
                         </span>
-
                         <span
-                          className={`text-base font-bold ${
+                          className={`text-base font-extrabold font-mono ${
                             repo.riskScore > 80
-                              ? 'text-red-400'
+                              ? 'text-rose-400'
                               : repo.riskScore > 50
-                                ? 'text-amber-400'
-                                : 'text-emerald-400'
+                              ? 'text-amber-400'
+                              : 'text-emerald-400'
                           }`}
                         >
                           {repo.riskScore}
                         </span>
                       </div>
 
-                      <div className="flex flex-col gap-0.5 border-x border-zinc-900">
-                        <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">
-                          Inventory
+                      <div className="flex flex-col gap-0.5 border-x border-slate-800">
+                        <span className="text-[9px] text-slate-400 uppercase tracking-wider font-mono font-semibold">
+                          CBOM Assets
                         </span>
-
-                        <span className="text-base font-bold text-zinc-200">
-                          {repo.cryptoAssetsCount}{' '}
-                          <span className="text-[10px] text-zinc-500 font-normal">
-                            assets
-                          </span>
+                        <span className="text-base font-extrabold font-mono text-slate-200">
+                          {repo.cryptoAssetsCount}
                         </span>
                       </div>
 
                       <div className="flex flex-col gap-0.5">
-                        <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">
-                          Critical Risks
+                        <span className="text-[9px] text-slate-400 uppercase tracking-wider font-mono font-semibold">
+                          Critical
                         </span>
-
-                        <span className="text-base font-bold text-red-400">
+                        <span className="text-base font-extrabold font-mono text-rose-400">
                           {repo.criticalCount}
                         </span>
                       </div>
@@ -1137,46 +1183,30 @@ export default function RepositoriesPage() {
                   )}
                 </div>
 
-                {/* Action Buttons */}
-                <div className="mt-6 flex items-center justify-between border-t border-zinc-900/60 pt-4 gap-2">
+                {/* Card Bottom Actions */}
+                <div className="mt-5 flex items-center justify-between border-t border-slate-800/80 pt-4 gap-2">
                   <button
-                    onClick={() =>
-                      handleDeleteRepo(
-                        repo.id,
-                        repo.name
-                      )
-                    }
-                    disabled={
-                      scanningId === repo.id
-                    }
-                    className="h-8 px-2.5 text-zinc-500 hover:text-red-400 hover:bg-red-950/20 border border-transparent rounded-lg flex items-center gap-1.5 text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={() => handleDeleteRepo(repo.id, repo.name)}
+                    disabled={scanningId === repo.id}
+                    className="h-8 px-2.5 text-slate-500 hover:text-rose-400 hover:bg-rose-950/20 border border-transparent rounded-xl flex items-center gap-1.5 text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                     Disconnect
                   </button>
 
                   <div className="flex items-center gap-2">
-                    {repo.status === 'scanned' && (
-                      <span className="text-[10px] text-zinc-500 font-mono">
-                        Last scan:{' '}
-                        {repo.lastScanTime?.split(
-                          ' '
-                        )[0]}
+                    {repo.status === 'scanned' && repo.lastScanTime && (
+                      <span className="text-[10px] text-slate-500 font-mono hidden sm:inline">
+                        Scanned {repo.lastScanTime.split(' ')[0]}
                       </span>
                     )}
 
                     <button
-                      onClick={() =>
-                        handleScanRepo(
-                          repo.id
-                        )
-                      }
-                      disabled={
-                        scanningId !== null
-                      }
-                      className="h-8 px-3.5 bg-zinc-800 hover:bg-zinc-700/80 text-zinc-200 border border-zinc-700/50 hover:border-zinc-600 rounded-lg flex items-center gap-1.5 text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={() => handleScanRepo(repo.id)}
+                      disabled={scanningId !== null}
+                      className="h-8 px-3.5 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white rounded-xl flex items-center gap-1.5 text-xs font-semibold transition-all shadow-[0_0_10px_rgba(6,182,212,0.2)] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     >
-                      <Play className="h-3 w-3 text-indigo-400 fill-indigo-400" />
+                      <Play className="h-3 w-3 fill-current" />
                       Scan Now
                     </button>
                   </div>
@@ -1189,15 +1219,16 @@ export default function RepositoriesPage() {
 
       {/* Connect Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl max-w-md w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0d121f] border border-slate-800 rounded-2xl max-w-md w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
+            <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
               <div className="flex items-center gap-2.5">
-                <FolderGit2 className="h-5 w-5 text-indigo-400" />
-
-                <h3 className="font-bold text-zinc-100">
-                  Connect Repository
+                <div className="h-8 w-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+                  <FolderGit2 className="h-4 w-4" />
+                </div>
+                <h3 className="font-bold text-white text-sm">
+                  Connect Git Repository
                 </h3>
               </div>
 
@@ -1209,174 +1240,119 @@ export default function RepositoriesPage() {
                   }
                 }}
                 disabled={isSaving}
-                className="h-7 w-7 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded flex items-center justify-center transition-colors disabled:opacity-50"
+                className="h-7 w-7 text-slate-500 hover:text-slate-300 hover:bg-slate-800 rounded-lg flex items-center justify-center transition-colors disabled:opacity-50 cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
             {/* Form */}
-            <form
-              onSubmit={handleSaveRepo}
-              className="p-6 space-y-4"
-            >
+            <form onSubmit={handleSaveRepo} className="p-6 space-y-4">
               {/* Repository Name */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">
+                <label className="text-[11px] font-mono font-semibold text-slate-400 uppercase tracking-wider">
                   Repository Name
                 </label>
-
                 <input
                   type="text"
                   required
-                  placeholder="e.g. user-auth-api"
+                  placeholder="e.g. auth-service-api"
                   value={repoName}
-                  onChange={(e) =>
-                    setRepoName(
-                      e.target.value
-                    )
-                  }
+                  onChange={(e) => setRepoName(e.target.value)}
                   disabled={isSaving}
-                  className="h-9 bg-zinc-950 border border-zinc-850 rounded-lg px-3 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-indigo-500 transition-colors disabled:opacity-50"
+                  className="h-10 bg-slate-900/90 border border-slate-800 rounded-xl px-3.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-all disabled:opacity-50"
                 />
               </div>
 
               {/* Git URL */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">
-                  GitHub HTTPS/SSH URL
+                <label className="text-[11px] font-mono font-semibold text-slate-400 uppercase tracking-wider">
+                  GitHub / Git Clone URL
                 </label>
-
                 <input
                   type="text"
                   required
                   placeholder="https://github.com/org/repo-name"
                   value={repoUrl}
-                  onChange={(e) =>
-                    setRepoUrl(
-                      e.target.value
-                    )
-                  }
+                  onChange={(e) => setRepoUrl(e.target.value)}
                   disabled={isSaving}
-                  className="h-9 bg-zinc-950 border border-zinc-850 rounded-lg px-3 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-indigo-500 transition-colors disabled:opacity-50"
+                  className="h-10 bg-slate-900/90 border border-slate-800 rounded-xl px-3.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-all disabled:opacity-50"
                 />
-
-                <p className="text-[9px] text-zinc-600">
-                  Example: https://github.com/user/repository
+                <p className="text-[10px] text-slate-500">
+                  Provide standard HTTPS or SSH clone URL
                 </p>
               </div>
 
               {/* Branch + Language */}
               <div className="grid grid-cols-2 gap-4">
-                {/* Branch */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">
+                  <label className="text-[11px] font-mono font-semibold text-slate-400 uppercase tracking-wider">
                     Default Branch
                   </label>
-
                   <input
                     type="text"
                     required
                     value={branch}
-                    onChange={(e) =>
-                      setBranch(
-                        e.target.value
-                      )
-                    }
+                    onChange={(e) => setBranch(e.target.value)}
                     disabled={isSaving}
-                    className="h-9 bg-zinc-950 border border-zinc-850 rounded-lg px-3 text-xs text-zinc-200 focus:outline-none focus:border-indigo-500 transition-colors disabled:opacity-50"
+                    className="h-10 bg-slate-900/90 border border-slate-800 rounded-xl px-3 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 transition-all disabled:opacity-50"
                   />
                 </div>
 
-                {/* Language */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">
-                    Primary Language
+                  <label className="text-[11px] font-mono font-semibold text-slate-400 uppercase tracking-wider">
+                    Language
                   </label>
-
                   <select
                     value={language}
-                    onChange={(e) =>
-                      setLanguage(
-                        e.target.value
-                      )
-                    }
+                    onChange={(e) => setLanguage(e.target.value)}
                     disabled={isSaving}
-                    className="h-9 bg-zinc-950 border border-zinc-850 rounded-lg px-2.5 text-xs text-zinc-200 focus:outline-none focus:border-indigo-500 transition-colors disabled:opacity-50"
+                    className="h-10 bg-slate-900/90 border border-slate-800 rounded-xl px-2.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 transition-all disabled:opacity-50"
                   >
-                    <option value="Python">
-                      Python
-                    </option>
-
-                    <option value="TypeScript">
-                      TypeScript
-                    </option>
-
-                    <option value="JavaScript">
-                      JavaScript
-                    </option>
-
-                    <option value="Go">
-                      Go
-                    </option>
-
-                    <option value="Java">
-                      Java
-                    </option>
+                    <option value="Python">Python</option>
+                    <option value="TypeScript">TypeScript</option>
+                    <option value="JavaScript">JavaScript</option>
+                    <option value="Go">Go</option>
+                    <option value="Java">Java</option>
                   </select>
                 </div>
               </div>
 
-              {/* Private Repository */}
-              <div className="flex items-center justify-between rounded-lg bg-zinc-950/60 border border-zinc-800 px-3 py-3">
+              {/* Private Repository Toggle */}
+              <div className="flex items-center justify-between rounded-xl bg-slate-900/60 border border-slate-800 px-3.5 py-3">
                 <div>
-                  <p className="text-xs font-semibold text-zinc-300">
+                  <p className="text-xs font-semibold text-slate-200">
                     Private Repository
                   </p>
-
-                  <p className="text-[10px] text-zinc-600 mt-0.5">
-                    Mark this repository as private.
+                  <p className="text-[10px] text-slate-500 mt-0.5">
+                    Requires git token authentication for access.
                   </p>
                 </div>
-
                 <input
                   type="checkbox"
                   checked={isPrivate}
-                  onChange={(e) =>
-                    setIsPrivate(
-                      e.target.checked
-                    )
-                  }
+                  onChange={(e) => setIsPrivate(e.target.checked)}
                   disabled={isSaving}
-                  className="h-4 w-4 accent-indigo-600"
+                  className="h-4 w-4 accent-cyan-500 cursor-pointer"
                 />
               </div>
 
               {/* Exclusions */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">
+                <label className="text-[11px] font-mono font-semibold text-slate-400 uppercase tracking-wider">
                   Path Exclusions
                 </label>
-
                 <input
                   type="text"
                   value={exclusions}
-                  onChange={(e) =>
-                    setExclusions(
-                      e.target.value
-                    )
-                  }
+                  onChange={(e) => setExclusions(e.target.value)}
                   disabled={isSaving}
-                  className="h-9 bg-zinc-950 border border-zinc-850 rounded-lg px-3 text-xs text-zinc-200 focus:outline-none focus:border-indigo-500 transition-colors disabled:opacity-50"
+                  className="h-10 bg-slate-900/90 border border-slate-800 rounded-xl px-3.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 transition-all disabled:opacity-50"
                 />
-
-                <p className="text-[9px] text-zinc-600">
-                  Scan exclusions are currently UI-only and will be connected to the scanner later.
-                </p>
               </div>
 
-              {/* Bottom Buttons */}
-              <div className="pt-4 border-t border-zinc-800 flex items-center justify-end gap-3">
+              {/* Modal Actions */}
+              <div className="pt-4 border-t border-slate-800 flex items-center justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => {
@@ -1386,7 +1362,7 @@ export default function RepositoriesPage() {
                     }
                   }}
                   disabled={isSaving}
-                  className="h-9 px-4 hover:bg-zinc-800 text-zinc-400 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50"
+                  className="h-9 px-4 hover:bg-slate-800 text-slate-400 hover:text-slate-200 rounded-xl text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -1394,15 +1370,10 @@ export default function RepositoriesPage() {
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="h-9 px-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="h-9 px-5 bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white rounded-xl text-xs font-semibold shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
                 >
-                  {isSaving && (
-                    <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                  )}
-
-                  {isSaving
-                    ? 'Connecting...'
-                    : 'Connect & Verify'}
+                  {isSaving && <RefreshCw className="h-3.5 w-3.5 animate-spin" />}
+                  {isSaving ? 'Registering...' : 'Connect & Verify'}
                 </button>
               </div>
             </form>
@@ -1411,4 +1382,4 @@ export default function RepositoriesPage() {
       )}
     </div>
   );
-}
+}

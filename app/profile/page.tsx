@@ -10,8 +10,11 @@ import {
   Fingerprint,
   RefreshCw,
   AlertCircle,
+  Shield,
+  KeyRound,
+  Lock,
+  Sparkles
 } from 'lucide-react';
-
 import {
   apiRequest,
   getAccessToken,
@@ -27,15 +30,9 @@ interface UserResponse {
 
 export default function ProfilePage() {
   const router = useRouter();
-
-  const [user, setUser] =
-    useState<UserResponse | null>(null);
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [error, setError] =
-    useState<string | null>(null);
+  const [user, setUser] = useState<UserResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -47,18 +44,10 @@ export default function ProfilePage() {
       }
 
       try {
-        const response =
-          await apiRequest<UserResponse>(
-            '/users/me'
-          );
-
+        const response = await apiRequest<UserResponse>('/users/me');
         setUser(response);
       } catch (err) {
-        console.error(
-          'Failed to load profile:',
-          err
-        );
-
+        console.error('Failed to load profile:', err);
         setError(
           err instanceof Error
             ? err.message
@@ -74,228 +63,171 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="p-6">
-
-        <div className="flex items-center gap-2 text-sm text-zinc-500">
-
-          <RefreshCw className="h-4 w-4 animate-spin" />
-
-          Loading profile...
-
+      <div className="p-8 flex items-center justify-center min-h-[50vh]">
+        <div className="flex flex-col items-center gap-3 text-cyan-400 font-mono text-xs">
+          <RefreshCw className="h-6 w-6 animate-spin" />
+          <span>INITIALIZING OPERATOR SECURITY CREDENTIALS...</span>
         </div>
-
       </div>
     );
   }
 
   if (error || !user) {
     return (
-      <div className="p-6">
-
-        <div className="max-w-lg bg-red-950/20 border border-red-900/40 rounded-xl p-5">
-
-          <div className="flex items-center gap-2">
-
-            <AlertCircle className="h-5 w-5 text-red-400" />
-
-            <h2 className="text-sm font-semibold text-red-300">
-              Unable to load profile
-            </h2>
-
+      <div className="p-6 md:p-8 max-w-4xl mx-auto">
+        <div className="bg-rose-950/20 border border-rose-800/40 rounded-2xl p-6 shadow-xl">
+          <div className="flex items-center gap-3 text-rose-400">
+            <AlertCircle className="h-5 w-5" />
+            <h2 className="text-sm font-semibold">Security Session Invalidation</h2>
           </div>
-
-          <p className="text-xs text-red-400 mt-2">
-            {error || 'User information was not found.'}
+          <p className="text-xs text-rose-300 mt-2 leading-relaxed">
+            {error || 'Unable to retrieve operator session record from Gateway.'}
           </p>
-
+          <button
+            onClick={() => router.replace('/login')}
+            className="mt-4 h-9 px-4 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold transition-all cursor-pointer"
+          >
+            Re-authenticate Operator
+          </button>
         </div>
-
       </div>
     );
   }
 
-  const createdDate =
-    new Date(
-      user.created_at
-    ).toLocaleString();
-
-  const updatedDate =
-    new Date(
-      user.updated_at
-    ).toLocaleString();
+  const createdDate = new Date(user.created_at).toLocaleString();
+  const updatedDate = new Date(user.updated_at).toLocaleString();
+  const initials = user.email ? user.email.slice(0, 2).toUpperCase() : 'OP';
 
   return (
-    <div className="p-6 max-w-4xl">
-
+    <div className="p-6 md:p-8 space-y-7 max-w-4xl mx-auto">
       {/* Page Header */}
-      <div className="mb-8">
-
-        <div className="flex items-center gap-3">
-
-          <div className="h-10 w-10 rounded-xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center">
-
-            <User className="h-5 w-5 text-indigo-400" />
-
-          </div>
-
-          <div>
-
-            <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
-              Profile
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-800/80">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl font-bold tracking-tight text-white">
+              Operator Security Credentials
             </h1>
-
-            <p className="text-xs text-zinc-500 mt-1">
-              View your Transit account information.
-            </p>
-
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              Verified Identity
+            </span>
           </div>
-
+          <p className="text-xs text-slate-400 mt-1">
+            Transit identity tokens, zero-trust cryptographic role credentials, and account activity metadata.
+          </p>
         </div>
-
       </div>
 
       {/* Profile Card */}
-      <div className="bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden">
-
-        {/* Profile Header */}
-        <div className="px-6 py-5 border-b border-zinc-200 dark:border-zinc-800">
-
-          <div className="flex items-center gap-4">
-
-            <div className="h-14 w-14 rounded-full bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center">
-
-              <User className="h-7 w-7 text-indigo-400" />
-
-            </div>
-
-            <div>
-
-              <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-                {user.email}
-              </h2>
-
-              <div className="flex items-center gap-2 mt-1">
-
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-
-                <span className="text-[10px] text-emerald-500">
-                  {user.is_active
-                    ? 'Active'
-                    : 'Inactive'}
-                </span>
-
+      <div className="bg-[#0d121f]/90 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-xl">
+        {/* Profile Banner */}
+        <div className="p-6 md:p-7 border-b border-slate-800 bg-gradient-to-r from-cyan-950/30 via-slate-900/40 to-transparent">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-indigo-500/20 border border-cyan-500/40 flex items-center justify-center font-mono font-extrabold text-xl text-cyan-300 shadow-[0_0_20px_rgba(6,182,212,0.25)]">
+                {initials}
               </div>
 
+              <div>
+                <h2 className="text-lg font-bold text-white tracking-wide">
+                  {user.email}
+                </h2>
+                <div className="flex items-center gap-2 mt-1 font-mono text-xs">
+                  <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-semibold flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                    {user.is_active ? 'Active Session' : 'Suspended'}
+                  </span>
+                  <span className="text-slate-500">•</span>
+                  <span className="text-slate-400 text-[11px]">Level 4 Cryptographic Architect</span>
+                </div>
+              </div>
             </div>
 
+            <div className="px-3.5 py-2 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center gap-2 self-start sm:self-auto">
+              <Shield className="h-4 w-4 text-cyan-400" />
+              <span className="text-xs font-mono text-cyan-300">Transit Sentinel Operator</span>
+            </div>
           </div>
-
         </div>
 
-        {/* Details */}
-        <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
-
+        {/* Details List */}
+        <div className="divide-y divide-slate-800/60 text-xs">
           {/* Email */}
-          <div className="px-6 py-5 flex items-center gap-4">
-
-            <Mail className="h-5 w-5 text-zinc-500 shrink-0" />
-
+          <div className="px-6 py-4.5 flex items-center gap-4 hover:bg-slate-800/20 transition-colors">
+            <div className="h-9 w-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-cyan-400 shrink-0">
+              <Mail className="h-4 w-4" />
+            </div>
             <div>
-
-              <p className="text-[10px] uppercase tracking-wider text-zinc-500">
-                Email
+              <p className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                Primary Identity Email
               </p>
-
-              <p className="text-sm text-zinc-800 dark:text-zinc-200 mt-1">
+              <p className="text-sm font-semibold text-slate-100 mt-0.5">
                 {user.email}
               </p>
-
             </div>
-
           </div>
 
           {/* Account Status */}
-          <div className="px-6 py-5 flex items-center gap-4">
-
-            <ShieldCheck className="h-5 w-5 text-zinc-500 shrink-0" />
-
-            <div>
-
-              <p className="text-[10px] uppercase tracking-wider text-zinc-500">
-                Account Status
-              </p>
-
-              <p className="text-sm text-zinc-800 dark:text-zinc-200 mt-1">
-                {user.is_active
-                  ? 'Active'
-                  : 'Inactive'}
-              </p>
-
+          <div className="px-6 py-4.5 flex items-center gap-4 hover:bg-slate-800/20 transition-colors">
+            <div className="h-9 w-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-emerald-400 shrink-0">
+              <ShieldCheck className="h-4 w-4" />
             </div>
-
+            <div>
+              <p className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                Security Posture Status
+              </p>
+              <p className="text-sm font-semibold text-emerald-400 mt-0.5">
+                {user.is_active ? 'Cryptographically Authorized' : 'Deactivated'}
+              </p>
+            </div>
           </div>
 
           {/* User ID */}
-          <div className="px-6 py-5 flex items-center gap-4">
-
-            <Fingerprint className="h-5 w-5 text-zinc-500 shrink-0" />
-
+          <div className="px-6 py-4.5 flex items-center gap-4 hover:bg-slate-800/20 transition-colors">
+            <div className="h-9 w-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-indigo-400 shrink-0">
+              <Fingerprint className="h-4 w-4" />
+            </div>
             <div className="min-w-0">
-
-              <p className="text-[10px] uppercase tracking-wider text-zinc-500">
-                User ID
+              <p className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                Transit Operator UUID
               </p>
-
-              <p className="text-xs font-mono text-zinc-700 dark:text-zinc-300 mt-1 break-all">
+              <p className="text-xs font-mono text-cyan-300 mt-0.5 break-all">
                 {user.id}
               </p>
-
             </div>
-
           </div>
 
           {/* Created */}
-          <div className="px-6 py-5 flex items-center gap-4">
-
-            <Calendar className="h-5 w-5 text-zinc-500 shrink-0" />
-
+          <div className="px-6 py-4.5 flex items-center gap-4 hover:bg-slate-800/20 transition-colors">
+            <div className="h-9 w-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 shrink-0">
+              <Calendar className="h-4 w-4" />
+            </div>
             <div>
-
-              <p className="text-[10px] uppercase tracking-wider text-zinc-500">
-                Account Created
+              <p className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                Identity Registration Timestamp
               </p>
-
-              <p className="text-sm text-zinc-800 dark:text-zinc-200 mt-1">
+              <p className="text-sm text-slate-200 mt-0.5 font-mono">
                 {createdDate}
               </p>
-
             </div>
-
           </div>
 
           {/* Updated */}
-          <div className="px-6 py-5 flex items-center gap-4">
-
-            <Calendar className="h-5 w-5 text-zinc-500 shrink-0" />
-
+          <div className="px-6 py-4.5 flex items-center gap-4 hover:bg-slate-800/20 transition-colors">
+            <div className="h-9 w-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 shrink-0">
+              <Calendar className="h-4 w-4" />
+            </div>
             <div>
-
-              <p className="text-[10px] uppercase tracking-wider text-zinc-500">
-                Last Updated
+              <p className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                Session Credential Last Modified
               </p>
-
-              <p className="text-sm text-zinc-800 dark:text-zinc-200 mt-1">
+              <p className="text-sm text-slate-200 mt-0.5 font-mono">
                 {updatedDate}
               </p>
-
             </div>
-
           </div>
-
         </div>
-
       </div>
-
     </div>
   );
 }

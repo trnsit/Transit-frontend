@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-sans",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-mono",
   subsets: ["latin"],
 });
 
@@ -16,8 +16,8 @@ import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 
 export const metadata: Metadata = {
-  title: "PQShield | Post-Quantum Cryptographic Migration Engine",
-  description: "Evidence-driven cryptographic dependency analysis and PQC migration planner",
+  title: "Transit | Post-Quantum Cryptography Migration Platform",
+  description: "Evidence-driven post-quantum cryptographic discovery, risk analysis, and automated migration platform",
 };
 
 export default function RootLayout({
@@ -28,14 +28,21 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
+      className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased dark`}
       style={{ colorScheme: "dark" }}
     >
-      <body className="min-h-full bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-row overflow-hidden font-sans">
+      <body className="min-h-full bg-[#07090e] text-slate-100 flex flex-row overflow-hidden font-sans selection:bg-cyan-500/30 selection:text-cyan-200">
+        {/* Ambient subtle cyber quantum background glow */}
+        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+          <div className="absolute -top-40 -left-40 w-96 h-96 bg-cyan-500/8 rounded-full blur-3xl" />
+          <div className="absolute top-1/3 -right-40 w-96 h-96 bg-indigo-500/8 rounded-full blur-3xl" />
+          <div className="absolute -bottom-40 left-1/3 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl" />
+        </div>
+
         <Sidebar />
-        <div className="flex-1 flex flex-col h-screen overflow-hidden">
+        <div className="flex-1 flex flex-col h-screen overflow-hidden relative z-10">
           <Header />
-          <main className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950">
+          <main className="flex-1 overflow-y-auto bg-[#07090e]/95 relative">
             {children}
           </main>
         </div>

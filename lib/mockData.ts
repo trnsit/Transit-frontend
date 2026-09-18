@@ -1,4 +1,4 @@
-// PQShield central mock data store & types
+// Transit central simulation store & types
 
 export interface Repository {
   id: string;
